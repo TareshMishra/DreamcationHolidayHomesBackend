@@ -78,8 +78,8 @@ app.post('/submit-form', async (req, res) => {
         // });
 
 
-        console.log("response", response)
-        console.log('Data submitted successfully:', response.data);
+        // console.log("response", response)
+        // console.log('Data submitted successfully:', response.data);
         res.status(200).json({
             message: 'Form submitted successfully',
             formData: {
