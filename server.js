@@ -67,15 +67,15 @@ app.post('/submit-form', async (req, res) => {
         console.log("client", client)
         const googleSheets = google.sheets({ version: 'v4', auth: client });
 
-        const response = await googleSheets.spreadsheets.values.append({
-            auth,
-            spreadsheetId,
-            range,
-            valueInputOption: 'USER_ENTERED',
-            resource: {
-                values: [[name, email, phone, formattedCheckIn, formattedCheckOut, timestamp]],
-            },
-        });
+        // const response = await googleSheets.spreadsheets.values.append({
+        //     auth,
+        //     spreadsheetId,
+        //     range,
+        //     valueInputOption: 'USER_ENTERED',
+        //     resource: {
+        //         values: [[name, email, phone, formattedCheckIn, formattedCheckOut, timestamp]],
+        //     },
+        // });
 
 
         console.log("response", response)
