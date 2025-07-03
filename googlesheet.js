@@ -7,6 +7,7 @@ import { fileURLToPath } from 'url';
 // const __dirname = path.dirname(__filename);
 
 const credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS);
+credentials.private_key = credentials.private_key.replace(/\\n/g, '\n');
 // Setup Google Auth
 const auth = new google.auth.GoogleAuth({
     credentials: credentials,
