@@ -28,7 +28,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 const CLIENT_ID = process.env.CLIENT_ID
-const CLIENT_SECRET =  process.env.CLIENT_SECRET
+const CLIENT_SECRET = process.env.CLIENT_SECRET
 const REDIRECT_URI = process.env.REDIRECT_URI
 
 const oAuth2Client = new OAuth2Client(
@@ -39,57 +39,57 @@ const oAuth2Client = new OAuth2Client(
 
 // API endpoint to gather google-oauth credentials and decode them
 app.post('/api/google-auth', async (req, res) => {
-  const { code } = req.body;
-  console.log("Auth-code:", code);
+    const { code } = req.body;
+    console.log("Auth-code:", code);
 
-  try {
-    const { tokens } = await oAuth2Client.getToken(code);
-    oAuth2Client.setCredentials(tokens);
-    console.log("Tokens Response:", tokens);
+    try {
+        const { tokens } = await oAuth2Client.getToken(code);
+        oAuth2Client.setCredentials(tokens);
+        console.log("Tokens Response:", tokens);
 
-    const people = google.people({ version: 'v1', auth: oAuth2Client });
+        const people = google.people({ version: 'v1', auth: oAuth2Client });
 
-    const profile = await people.people.get({
-      resourceName: 'people/me',
-      personFields: 'names,emailAddresses,addresses ,birthdays,phoneNumbers'
-    });
+        const profile = await people.people.get({
+            resourceName: 'people/me',
+            personFields: 'names,emailAddresses,locations,birthdays,phoneNumbers'
+        });
 
-    console.log("Profile Data:", profile.data);
+        console.log("Profile Data:", profile.data);
 
-    const names = (profile.data.names) || []; 
-    const birthdays = (profile.data.birthdays) || [];
-    const emailAddresses = (profile.data.emailAddresses) || [];
-    const phoneNumbers = (profile.data.phoneNumbers) || [];
+        const names = (profile.data.names) || [];
+        const birthdays = (profile.data.birthdays) || [];
+        const emailAddresses = (profile.data.emailAddresses) || [];
+        const phoneNumbers = (profile.data.phoneNumbers) || [];
 
-    const userName = processNames(names);
-    const userBirthday = processBirthdays(birthdays);
-    const userEmailAddress = processEmailAddresses(emailAddresses);
-    const userPhoneNumber = processPhoneNumbers(phoneNumbers);
+        const userName = processNames(names);
+        const userBirthday = processBirthdays(birthdays);
+        const userEmailAddress = processEmailAddresses(emailAddresses);
+        const userPhoneNumber = processPhoneNumbers(phoneNumbers);
 
-    // Append to OAuth-specific sheet
-    const result = await appendUserToOAuthSheet({
-      name: userName,
-      birthdate: userBirthday,
-      email: userEmailAddress,
-      phone: userPhoneNumber
-    });
+        // Append to OAuth-specific sheet
+        const result = await appendUserToOAuthSheet({
+            name: userName,
+            birthdate: userBirthday,
+            email: userEmailAddress,
+            phone: userPhoneNumber
+        });
 
-    console.log("OAuth data appended to spreadsheet successfully!!");
+        console.log("OAuth data appended to spreadsheet successfully!!");
 
-    res.status(200).json({
-      status: "success",
-      data: profile.data,
-      sheetInfo: result
-    });
+        res.status(200).json({
+            status: "success",
+            data: profile.data,
+            sheetInfo: result
+        });
 
-  } catch (error) {
-    console.error('Error during Google Auth process:', error);
-    res.status(500).json({
-      status: "error",
-      message: "Failed to process Google authentication.",
-      error: error.message
-    });
-  }
+    } catch (error) {
+        console.error('Error during Google Auth process:', error);
+        res.status(500).json({
+            status: "error",
+            message: "Failed to process Google authentication.",
+            error: error.message
+        });
+    }
 });
 
 // API endpoint to submit form data
@@ -106,7 +106,7 @@ app.post('/submit-form', async (req, res) => {
         const formattedCheckOut = new Date(checkOut).toISOString().split('T')[0];
         console.log("formattedCheckIn", formattedCheckIn)
         console.log("formattedCheckOut", formattedCheckOut)
-        
+
         const timestamp = new Date().toLocaleString('en-IN', {
             day: '2-digit',
             month: 'long',
