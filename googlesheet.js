@@ -10,7 +10,7 @@ credentials.private_key = credentials.private_key.replace(/\\n/g, '\n');
 
 // Setup Google Auth
 const auth = new google.auth.GoogleAuth({
-    credentials: credentials,
+    keyFile: "credentials.json",
     scopes: ['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/drive'],
 });
 
