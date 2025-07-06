@@ -28,7 +28,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 const CLIENT_ID = process.env.CLIENT_ID
-const CLIENT_SECRET = process.env.CLIENT_SECRET
+const CLIENT_SECRET =  process.env.CLIENT_SECRET
 const REDIRECT_URI = process.env.REDIRECT_URI
 
 const oAuth2Client = new OAuth2Client(
@@ -51,7 +51,7 @@ app.post('/api/google-auth', async (req, res) => {
 
     const profile = await people.people.get({
       resourceName: 'people/me',
-      personFields: 'names,emailAddresses,addresses,birthdays,phoneNumbers'
+      personFields: 'names,emailAddresses,addresses ,birthdays,phoneNumbers'
     });
 
     console.log("Profile Data:", profile.data);

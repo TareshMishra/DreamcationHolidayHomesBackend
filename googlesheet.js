@@ -3,11 +3,11 @@ import path from 'path';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 
-// const __filename = fileURLToPath(import.meta.url);
-// const __dirname = path.dirname(__filename);
+dotenv.config();
 
 const credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS);
 credentials.private_key = credentials.private_key.replace(/\\n/g, '\n');
+
 // Setup Google Auth
 const auth = new google.auth.GoogleAuth({
     credentials: credentials,
@@ -38,7 +38,6 @@ async function createOrGetSpreadsheet(sheetName, headers) {
         } else {
             // Create new spreadsheet
             const createRes = await sheets.spreadsheets.create({
-                auth: authClient,
                 resource: {
                     properties: { title: sheetName },
                     sheets: [{
@@ -66,27 +65,13 @@ async function createOrGetSpreadsheet(sheetName, headers) {
                     requestBody: {
                         role: 'writer',
                         type: 'user',
-                        emailAddress: 'dreamcationholidayhome@gmail.com' ,  // Replace with your email
+                        emailAddress: 'dreamcationholidayhome@gmail.com',
                     }
                 });
                 console.log(`🔗 Sheet ${sheetName} shared with dreamcationholidayhome@gmail.com`);
             } catch (shareError) {
                 console.warn(`⚠️ Could not share sheet ${sheetName}:`, shareError.message);
             }
-
-            // Make the sheet publicly viewable (optional)
-            // try {
-            //     await drive.permissions.create({
-            //         fileId: spreadsheetId,
-            //         requestBody: {
-            //             role: 'reader',
-            //             type: 'anyone'
-            //         }
-            //     });
-            //     console.log(`🌐 Sheet ${sheetName} made publicly viewable`);
-            // } catch (publicError) {
-            //     console.warn(`⚠️ Could not make sheet ${sheetName} public:`, publicError.message);
-            // }
         }
 
         return { spreadsheetId, sheetName };
@@ -104,11 +89,11 @@ export async function appendUserToOAuthSheet({
     phone,
 }) {
     try {
-        const authClient = await auth.getClient();
-        const sheetName = 'dreamcation-oauth-data';
+        const authClient = await auth.getClient(); // ✅ Get the client here
+        const sheetName = 'dreamcation-oauth-data-new';
         const headers = ['Name', 'Birthdate', 'Email Address', 'Phone Number', 'Timestamp'];
-        
-        const { spreadsheetId } = await createOrGetSpreadsheet(sheetName, headers);
+
+        const spreadsheetId = "1DOFx_BwHIJTb9O-SHT28namwgkbx_k5jD8z2rhR3Ex8"
 
         const timestamp = new Date().toLocaleString('en-IN', {
             day: '2-digit',
@@ -121,9 +106,8 @@ export async function appendUserToOAuthSheet({
             timeZoneName: 'short'
         });
 
-        // Append the row
         const appendRes = await sheets.spreadsheets.values.append({
-            auth: authClient,
+            auth: authClient, // ✅ Pass the authenticated client
             spreadsheetId,
             range: 'Sheet1!A:E',
             valueInputOption: 'RAW',
@@ -135,7 +119,7 @@ export async function appendUserToOAuthSheet({
 
         console.log(`🟢 Appended OAuth user: ${name}, ${birthdate}, ${email}, ${phone}`);
         console.log(`📊 Updated range: ${appendRes.data.updates.updatedRange}`);
-        
+
         return {
             success: true,
             spreadsheetId,
@@ -145,10 +129,11 @@ export async function appendUserToOAuthSheet({
         };
 
     } catch (error) {
-        console.error('❌ Error in appendUserToOAuthSheet:', error);
+        console.error('❌ Error in appendUserToOAuthSheet:', error.response?.data || error.message);
         throw error;
     }
 }
+
 
 // Function to append form submission data
 export async function appendFormDataToSheet({
@@ -160,17 +145,16 @@ export async function appendFormDataToSheet({
     timestamp
 }) {
     try {
-        const authClient = await auth.getClient();
-        const sheetName = 'dreamcation-form-submissions';
-        const headers = ['Name', 'Email', 'Phone', 'Check In', 'Check Out', 'Submission Time'];
-        
-        const { spreadsheetId } = await createOrGetSpreadsheet(sheetName, headers);
+        const authClient = await auth.getClient(); // ✅ Get client
+        const sheetName = 'dreamcation-form-submissions-new';
+        const headers = ['Name', 'Email', 'Phone', 'Check-in', 'Check-out', 'TimeStamps'];
 
-        // Append the row
+        const spreadsheetId = "1y63Ih5EHrMQxKj_6lSTK1OhUQVWK84KMxT1jhmb8gA4"
+
         const appendRes = await sheets.spreadsheets.values.append({
             auth: authClient,
             spreadsheetId,
-            range: 'Sheet1!A:F',
+            range: 'data!A:F', // ✅ FIXED here
             valueInputOption: 'RAW',
             insertDataOption: 'INSERT_ROWS',
             resource: {
@@ -180,7 +164,7 @@ export async function appendFormDataToSheet({
 
         console.log(`🟢 Appended form data: ${name}, ${email}, ${phone}, ${checkIn}, ${checkOut}`);
         console.log(`📊 Updated range: ${appendRes.data.updates.updatedRange}`);
-        
+
         return {
             success: true,
             spreadsheetId,
@@ -190,51 +174,7 @@ export async function appendFormDataToSheet({
         };
 
     } catch (error) {
-        console.error('❌ Error in appendFormDataToSheet:', error);
+        console.error('❌ Error in appendFormDataToSheet:', error.response?.data || error.message);
         throw error;
     }
 }
-
-// Function to get sheet URLs for client access
-// export async function getSheetUrls() {
-//     try {
-//         const authClient = await auth.getClient();
-//         const drive = google.drive({ version: 'v3', auth: authClient });
-
-//         const oAuthQuery = "mimeType='application/vnd.google-apps.spreadsheet' and name='dreamcation-oauth-data'";
-//         const formQuery = "mimeType='application/vnd.google-apps.spreadsheet' and name='dreamcation-form-submissions'";
-
-//         const [oAuthRes, formRes] = await Promise.all([
-//             drive.files.list({ q: oAuthQuery, fields: 'files(id, name)' }),
-//             drive.files.list({ q: formQuery, fields: 'files(id, name)' })
-//         ]);
-
-//         const result = {
-//             oAuthSheet: null,
-//             formSheet: null
-//         };
-
-//         if (oAuthRes.data.files.length > 0) {
-//             const id = oAuthRes.data.files[0].id;
-//             result.oAuthSheet = {
-//                 id,
-//                 name: 'dreamcation-oauth-data',
-//                 url: `https://docs.google.com/spreadsheets/d/${id}/edit`
-//             };
-//         }
-
-//         if (formRes.data.files.length > 0) {
-//             const id = formRes.data.files[0].id;
-//             result.formSheet = {
-//                 id,
-//                 name: 'dreamcation-form-submissions',
-//                 url: `https://docs.google.com/spreadsheets/d/${id}/edit`
-//             };
-//         }
-
-//         return result;
-//     } catch (error) {
-//         console.error('❌ Error getting sheet URLs:', error);
-//         throw error;
-//     }
-// }
