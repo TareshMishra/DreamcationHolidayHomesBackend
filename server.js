@@ -10,7 +10,7 @@ import { OAuth2Client } from 'google-auth-library';
 
 // Import the helper functions and sheet functions
 import { processNames, processBirthdays, processEmailAddresses, processPhoneNumbers } from './helper.js';
-import { appendUserToOAuthSheet, appendFormDataToSheet } from './googlesheet.js';
+import { appendUserToOAuthSheet, appendFormDataToSheet, appendToGeolocationDataSheet } from './googlesheet.js';
 
 dotenv.config();
 const app = express();
@@ -150,9 +150,56 @@ app.post('/submit-form', async (req, res) => {
     }
 });
 
-// Root route
-app.get('/', (req, res) => {
-    res.send("Welcome to Dreamcation Backend");
+app.get('/', async (req, res) => {
+  try {
+    console.log("received ping request");
+    // Get client IP address (supports proxies)
+    const ip =
+      req.headers['x-forwarded-for']?.split(',')[0] ||
+      req.connection.remoteAddress ||
+      req.socket.remoteAddress;
+
+    // Use public IP for localhost
+    const ipToLookup = (ip === '::1' || ip === '127.0.0.1') ? '8.8.8.8' : ip;
+
+    // Fetch geolocation data
+    const geoResp = await axios.get(`https://ipapi.co/${ipToLookup}/json/`);
+    const geoData = geoResp.data;
+
+    // Append to Google Sheet
+    try {
+      await appendToGeolocationDataSheet({
+        ip: ipToLookup,
+        city: geoData.city || '',
+        region: geoData.region || '',
+        country: geoData.country_name || '',
+        latitude: geoData.latitude || '',
+        longitude: geoData.longitude || '',
+      });
+    } catch (sheetError) {
+      console.error("Failed to log geolocation data to sheet:", sheetError.message);
+    }
+
+    // Send response
+    res.json({
+      message: "Welcome to Dreamcation Backend",
+      ip: ipToLookup,
+      location: {
+        city: geoData.city,
+        region: geoData.region,
+        country: geoData.country_name,
+        latitude: geoData.latitude,
+        longitude: geoData.longitude,
+      },
+    });
+
+  } catch (error) {
+    console.error("Geolocation lookup failed:", error.message);
+    res.status(500).json({
+      message: "Welcome to Dreamcation Backend",
+      error: "Failed to fetch geolocation",
+    });
+  }
 });
 
 // Keep-alive ping to prevent Render sleep

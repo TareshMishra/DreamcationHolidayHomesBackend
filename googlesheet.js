@@ -17,69 +17,113 @@ const auth = new google.auth.GoogleAuth({
 const sheets = google.sheets({ version: 'v4', auth });
 
 // Function to create or get a spreadsheet
-async function createOrGetSpreadsheet(sheetName, headers) {
-    try {
-        const authClient = await auth.getClient();
-        const drive = google.drive({ version: 'v3', auth: authClient });
+// async function createOrGetSpreadsheet(sheetName, headers) {
+//     try {
+//         const authClient = await auth.getClient();
+//         const drive = google.drive({ version: 'v3', auth: authClient });
 
-        // Search for existing spreadsheet
-        const query = `mimeType='application/vnd.google-apps.spreadsheet' and name='${sheetName}'`;
-        const res = await drive.files.list({
-            q: query,
-            fields: 'files(id, name)',
-            spaces: 'drive',
+//         // Search for existing spreadsheet
+//         const query = `mimeType='application/vnd.google-apps.spreadsheet' and name='${sheetName}'`;
+//         const res = await drive.files.list({
+//             q: query,
+//             fields: 'files(id, name)',
+//             spaces: 'drive',
+//         });
+
+//         let spreadsheetId;
+
+//         if (res.data.files.length > 0) {
+//             spreadsheetId = res.data.files[0].id;
+//             console.log(`✅ Found existing sheet: ${sheetName} (${spreadsheetId})`);
+//         } else {
+//             // Create new spreadsheet
+//             const createRes = await sheets.spreadsheets.create({
+//                 resource: {
+//                     properties: { title: sheetName },
+//                     sheets: [{
+//                         properties: { title: 'Sheet1' },
+//                         data: [{
+//                             startRow: 0,
+//                             startColumn: 0,
+//                             rowData: [{
+//                                 values: headers.map(header => ({
+//                                     userEnteredValue: { stringValue: header }
+//                                 })),
+//                             }],
+//                         }],
+//                     }],
+//                 },
+//             });
+
+//             spreadsheetId = createRes.data.spreadsheetId;
+//             console.log(`📄 Created new sheet: ${sheetName} (${spreadsheetId})`);
+
+//             // Share the sheet with your personal Google account
+//             try {
+//                 await drive.permissions.create({
+//                     fileId: spreadsheetId,
+//                     requestBody: {
+//                         role: 'writer',
+//                         type: 'user',
+//                         emailAddress: 'dreamcationholidayhome@gmail.com',
+//                     }
+//                 });
+//                 console.log(`🔗 Sheet ${sheetName} shared with dreamcationholidayhome@gmail.com`);
+//             } catch (shareError) {
+//                 console.warn(`⚠️ Could not share sheet ${sheetName}:`, shareError.message);
+//             }
+//         }
+
+//         return { spreadsheetId, sheetName };
+//     } catch (error) {
+//         console.error(`❌ Error in createOrGetSpreadsheet for ${sheetName}:`, error);
+//         throw error;
+//     }
+// }
+
+export async function appendToGeolocationDataSheet({
+    ip,
+    city,
+    region,
+    country,
+    latitude,
+    longitude,
+}) {
+    try {
+        const authClient = await auth.getClient(); // ✅ Get the client here
+        const spreadsheetId = "1gIgsCnog4Qs4Mk7PKFyHLi37pTWbS_2oapvMnW2c3zk";
+
+        const timestamp = new Date().toLocaleString('en-IN', {
+            day: '2-digit',
+            month: 'long',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: true,
+            timeZoneName: 'short',
         });
 
-        let spreadsheetId;
+        const values = [[ip, city, region, country, latitude, longitude, timestamp]];
 
-        if (res.data.files.length > 0) {
-            spreadsheetId = res.data.files[0].id;
-            console.log(`✅ Found existing sheet: ${sheetName} (${spreadsheetId})`);
-        } else {
-            // Create new spreadsheet
-            const createRes = await sheets.spreadsheets.create({
-                resource: {
-                    properties: { title: sheetName },
-                    sheets: [{
-                        properties: { title: 'Sheet1' },
-                        data: [{
-                            startRow: 0,
-                            startColumn: 0,
-                            rowData: [{
-                                values: headers.map(header => ({
-                                    userEnteredValue: { stringValue: header }
-                                })),
-                            }],
-                        }],
-                    }],
-                },
-            });
+        const appendRes = await sheets.spreadsheets.values.append({
+            auth:authClient,
+            spreadsheetId,
+            range: 'data!A:G',
+            valueInputOption: 'RAW',
+            insertDataOption: 'INSERT_ROWS',
+            resource: {
+                values,
+            },
+        });
 
-            spreadsheetId = createRes.data.spreadsheetId;
-            console.log(`📄 Created new sheet: ${sheetName} (${spreadsheetId})`);
-
-            // Share the sheet with your personal Google account
-            try {
-                await drive.permissions.create({
-                    fileId: spreadsheetId,
-                    requestBody: {
-                        role: 'writer',
-                        type: 'user',
-                        emailAddress: 'dreamcationholidayhome@gmail.com',
-                    }
-                });
-                console.log(`🔗 Sheet ${sheetName} shared with dreamcationholidayhome@gmail.com`);
-            } catch (shareError) {
-                console.warn(`⚠️ Could not share sheet ${sheetName}:`, shareError.message);
-            }
-        }
-
-        return { spreadsheetId, sheetName };
+        return appendRes;
     } catch (error) {
-        console.error(`❌ Error in createOrGetSpreadsheet for ${sheetName}:`, error);
+        console.error("Failed to append geolocation data:", error);
         throw error;
     }
 }
+
 
 // Function to append OAuth user data
 export async function appendUserToOAuthSheet({
@@ -91,7 +135,6 @@ export async function appendUserToOAuthSheet({
     try {
         const authClient = await auth.getClient(); // ✅ Get the client here
         const sheetName = 'dreamcation-oauth-data-new';
-        const headers = ['Name', 'Birthdate', 'Email Address', 'Phone Number', 'Timestamp'];
 
         const spreadsheetId = "1DOFx_BwHIJTb9O-SHT28namwgkbx_k5jD8z2rhR3Ex8"
 
